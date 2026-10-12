@@ -1,0 +1,10 @@
+name: Feature request
+description: Something a tool built on approvekit needs
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you need, and which tool needs it?
+    validations:
+      required: true
