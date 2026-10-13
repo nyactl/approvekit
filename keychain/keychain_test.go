@@ -1,3 +1,5 @@
+//go:build darwin || linux
+
 package keychain
 
 import (
@@ -6,8 +8,8 @@ import (
 	"testing"
 )
 
-// TestKeychainRoundTrip writes to the real login keychain, so it only runs
-// when APPROVEKIT_KEYCHAIN_TEST=1.
+// TestKeychainRoundTrip writes to the real store (the macOS Keychain or the
+// Secret Service on Linux), so it only runs when APPROVEKIT_KEYCHAIN_TEST=1.
 func TestKeychainRoundTrip(t *testing.T) {
 	if os.Getenv("APPROVEKIT_KEYCHAIN_TEST") != "1" {
 		t.Skip("set APPROVEKIT_KEYCHAIN_TEST=1 to test against the login keychain")

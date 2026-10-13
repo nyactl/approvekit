@@ -27,6 +27,24 @@ jobs:
       - run: go vet ./...
       - run: go test -race -shuffle=on ./...
 
+  # The Secret Service store against a real GNOME Keyring in a headless
+  # D-Bus session.
+  secret-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gnome-keyring dbus
+      - name: Round trip through the Secret Service
+        run: |
+          dbus-run-session -- sh -c '
+            printf "ci-keyring-password" | gnome-keyring-daemon --unlock --components=secrets >/dev/null &&
+            APPROVEKIT_KEYCHAIN_TEST=1 go test -count=1 -v -run TestKeychainRoundTrip ./keychain/'
+
   lint:
     runs-on: ubuntu-latest
     steps:

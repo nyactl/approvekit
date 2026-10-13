@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## Unreleased
 
+### Added
+
+- `keychain` stores tokens through the Secret Service on Linux (GNOME Keyring, KWallet), using github.com/zalando/go-keyring, with no fallback to files or environment variables. CI checks it against a real GNOME Keyring.
+
 ## [0.1.0] - 2026-10-12
 
 ### Added
