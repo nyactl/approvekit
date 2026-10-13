@@ -16,8 +16,8 @@ Reports that break any of these are in scope:
 
 1. **Approval:** `approval.Gate` lets a change through only after the human approved exactly that change; an approval cannot be replayed, forged, used after 10 minutes, or applied to a change that differs from what was shown.
 2. **People:** in mode `Own`, `people.People` never returns another person's account ID, display name or email, and redacts every name and email it has seen in text passed to `Text`.
-3. **Token containment:** `atlassian.Client` sends the token only to the configured site or the API gateway and refuses redirects to other hosts; `keychain` keeps the token in the login keychain, not synchronised.
+3. **Token containment:** `atlassian.Client` sends the token only to the configured site or the API gateway and refuses redirects to other hosts; `keychain` keeps the token in the login keychain, not synchronised, or in the Secret Service on Linux, never in a file or environment variable.
 4. **Development builds:** `profile.CheckDevBuild` never lets a build that is not a tagged release use the default profile, or a profile that did not opt in.
 5. **Output safety:** `sanitize.String` removes terminal control sequences, bidirectional overrides and invisible characters.
 
-Known limits, not vulnerabilities: names written in free text by people who never appear in structured data; MCP clients configured to answer elicitations automatically.
+Known limits, not vulnerabilities: on Linux, the Secret Service does not bind an item to the program that stored it, so any program of the user's unlocked session can read the token; names written in free text by people who never appear in structured data; MCP clients configured to answer elicitations automatically.

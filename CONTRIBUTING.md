@@ -15,7 +15,7 @@ Requires Go 1.26 or newer; the Keychain code needs macOS and cgo.
 ```sh
 make test
 make lint
-APPROVEKIT_KEYCHAIN_TEST=1 go test ./keychain/   # writes to the real login keychain
+APPROVEKIT_KEYCHAIN_TEST=1 go test ./keychain/   # writes to the real store (Keychain or Secret Service)
 ```
 
 Tests must not contact a real Atlassian site.
