@@ -1,6 +1,14 @@
 package people
 
-import "testing"
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+)
 
 var (
 	me    = &Person{AccountID: "acc-me", DisplayName: "Max Mustermann", Email: "max@example.com"}
@@ -124,5 +132,93 @@ func TestOffModeLabelUpgradesToReliableName(t *testing.T) {
 	}
 	if got := p.Mention("acc-alice", "@Ali"); got != "Alice Smith" {
 		t.Errorf("stale mention text took over again: %q", got)
+	}
+}
+
+func TestLabelsAcrossSessions(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "profile", "test.labels.json")
+	me := Person{AccountID: "acc-me", DisplayName: "Max Mustermann"}
+	first := New(Own, me).WithStore(NewFileStore(path))
+	if a, b := first.ID("acc-1", "Alice Smith", ""), first.ID("acc-2", "Bob Jones", ""); a != "Person A" || b != "Person B" {
+		t.Fatalf("labels %s, %s", a, b)
+	}
+	// A later session: the same labels, whatever the order, and a label
+	// shown before resolves without being shown again.
+	second := New(Own, me).WithStore(NewFileStore(path))
+	if b := second.ID("acc-2", "Bob Jones", ""); b != "Person B" {
+		t.Errorf("acc-2 is %s in the second session", b)
+	}
+	if id, display, ok := second.Resolve("person a"); !ok || id != "acc-1" || display != "Person A" {
+		t.Errorf("Resolve = %q %q %v", id, display, ok)
+	}
+	if _, _, ok := second.Resolve("Person Z"); ok {
+		t.Error("an unknown label resolved")
+	}
+	if _, _, ok := second.Resolve("Me"); !ok {
+		t.Error("Me does not resolve")
+	}
+	if c := second.ID("acc-3", "Carol", ""); c != "Person C" {
+		t.Errorf("new person is %s", c)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"Alice", "Bob", "Carol", "Max"} {
+		if strings.Contains(string(raw), bad) {
+			t.Errorf("label file holds %q: %s", bad, raw)
+		}
+	}
+	if st, _ := os.Stat(path); st.Mode().Perm() != 0o600 {
+		t.Errorf("label file mode %v", st.Mode())
+	}
+	// Mode off neither uses nor resolves stored labels.
+	off := New(Off, me).WithStore(NewFileStore(path))
+	if l := off.ID("acc-1", "Alice Smith", ""); l != "Alice Smith" {
+		t.Errorf("off mode shows %q", l)
+	}
+	if _, _, ok := off.Resolve("Person A"); ok {
+		t.Error("off mode resolved a stored label")
+	}
+}
+
+func TestLabelsSharedByPrograms(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "labels.json")
+	const n = 40
+	labels := make([]string, n)
+	var wg sync.WaitGroup
+	for i := range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			p := New(Own, Person{AccountID: "acc-me"}).WithStore(NewFileStore(path))
+			labels[i] = p.ID(fmt.Sprintf("acc-%d", i), "", "")
+		}()
+	}
+	wg.Wait()
+	seen := map[string]bool{}
+	for _, l := range labels {
+		if seen[l] {
+			t.Fatalf("label %s given twice: %v", l, labels)
+		}
+		seen[l] = true
+	}
+}
+
+type failingStore struct{}
+
+func (failingStore) Label(string) (string, error)  { return "", errors.New("disk full") }
+func (failingStore) Account(string) (string, bool) { return "", false }
+
+func TestLabelsWhenTheStoreFails(t *testing.T) {
+	t.Parallel()
+	p := New(Own, Person{AccountID: "acc-me"}).WithStore(failingStore{})
+	if l := p.ID("acc-1", "Alice", ""); l != "Person ?A" {
+		t.Errorf("label %q", l)
+	}
+	if id, _, ok := p.Resolve("Person ?A"); !ok || id != "acc-1" {
+		t.Error("session label does not resolve")
 	}
 }
