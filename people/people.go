@@ -48,6 +48,27 @@ type People struct {
 	reliable map[string]bool     // display came from a structured field
 	names    map[string][]string // accountID -> every name and email seen, for redaction
 	next     int
+	store    LabelStore
+}
+
+// LabelStore keeps labels across sessions, so a person has the same label
+// in every command and session of a profile. It gives out the labels
+// itself, so programs that share it never give one label to two people.
+type LabelStore interface {
+	// Label returns the account's label, giving it the next free one if it
+	// has none.
+	Label(accountID string) (string, error)
+	// Account returns the account a label was given to.
+	Account(label string) (accountID string, ok bool)
+}
+
+// WithStore makes p take labels from s. Without a store, labels last for
+// p's lifetime. It returns p.
+func (p *People) WithStore(s LabelStore) *People {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.store = s
+	return p
 }
 
 // New returns People for the authenticated user me.
@@ -127,12 +148,26 @@ func (p *People) remember(accountID, display, email string, reliable bool) strin
 		if existing, ok := p.label[accountID]; ok {
 			return existing
 		}
-		p.next++
-		l = "Person " + letters(p.next)
+		l = p.newLabel(accountID)
 	}
 	p.label[accountID] = l
 	p.account[strings.ToLower(l)] = accountID
 	return l
+}
+
+// newLabel gives an account its label, from the store if there is one. If
+// the store fails, the label is marked as one of this session only, so it
+// cannot clash with stored ones.
+func (p *People) newLabel(accountID string) string {
+	if p.store != nil {
+		if l, err := p.store.Label(accountID); err == nil {
+			return l
+		}
+		p.next++
+		return "Person ?" + letters(p.next)
+	}
+	p.next++
+	return "Person " + letters(p.next)
 }
 
 func (p *People) addName(accountID, name string) {
@@ -156,17 +191,29 @@ func letters(n int) string {
 }
 
 // Resolve maps a mention label back to an account ID and the display text
-// stored with a mention. Only people seen in this session resolve.
+// stored with a mention. Only people shown before resolve: in this session,
+// or, with a store, in an earlier one.
 func (p *People) Resolve(label string) (accountID, display string, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	id, ok := p.account[strings.ToLower(strings.TrimSpace(label))]
-	if !ok {
+	label = strings.TrimSpace(label)
+	id, ok := p.account[strings.ToLower(label)]
+	if !ok && p.store != nil && p.mode == Own && !strings.EqualFold(label, MeLabel) {
+		if id, ok = p.store.Account(label); ok {
+			// Known from an earlier session: remember it as stored.
+			if stored, err := p.store.Label(id); err == nil {
+				label = stored
+			}
+			p.label[id] = label
+			p.account[strings.ToLower(label)] = id
+		}
+	}
+	if !ok || id == "" {
 		return "", "", false
 	}
 	d := p.display[id]
 	if d == "" {
-		d = label
+		d = p.label[id]
 	}
 	return id, d, true
 }

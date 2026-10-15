@@ -4,6 +4,13 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## Unreleased
 
+## [0.3.0] - 2026-10-16
+
+### Added
+
+- `picker`: a full-screen fuzzy finder for the terminal (type to filter, fzf-style matching and keys, action keys, alternate screen) and a scrollable text view.
+- `people`: `LabelStore` and `FileStore` keep labels across sessions of a profile, with file locking so programs sharing the file agree; labels from earlier sessions resolve for mentions.
+
 ## [0.2.0] - 2026-10-13
 
 ### Added
@@ -17,5 +24,6 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Packages `approval`, `people`, `atlassian`, `profile`, `keychain` and `sanitize`, extracted from tix-for-jira and generalised for Confluence.
 - `atlassian` routes scoped tokens through the API gateway for Jira and Confluence, reads the error formats of both, and names a missing scope through `WithScopeHint`.
 
+[0.3.0]: https://github.com/nyactl/approvekit/releases/tag/v0.3.0
 [0.2.0]: https://github.com/nyactl/approvekit/releases/tag/v0.2.0
 [0.1.0]: https://github.com/nyactl/approvekit/releases/tag/v0.1.0

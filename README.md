@@ -16,10 +16,11 @@ approvekit is shared by [tix-for-jira](https://github.com/nyactl/tix-for-jira) a
 | Package | What it does |
 |---|---|
 | [`approval`](approval) | An MCP approval gate: a write tool asks the human through an elicitation and applies the change only after approval. Approvals are single-use, expire after 10 minutes, and are bound by an HMAC to the tool, its arguments and the exact text the human saw. |
-| [`people`](people) | Replaces people by stable labels ("Me", "Person A", ...), redacts known names and emails in free text, and resolves labels back for mentions. |
+| [`people`](people) | Replaces people by stable labels ("Me", "Person A", ...), redacts known names and emails in free text, and resolves labels back for mentions. A file store keeps labels across sessions of a profile, holding account IDs and labels only. |
 | [`atlassian`](atlassian) | HTTP core for Atlassian Cloud REST APIs: API token authentication, routing through the API gateway for scoped tokens, retries on rate limits, error decoding for Jira and Confluence, uploads, and errors that name a missing scope. Redirects to another host are refused. |
 | [`profile`](profile) | Settings per profile (e.g. production and a test site) with owner-only files, site and account validation, token expiry warnings, and a lock that keeps development builds away from production. |
 | [`keychain`](keychain) | Token storage in the macOS Keychain (items bound to the creating binary, never synchronised to iCloud) or, on Linux, through the Secret Service (GNOME Keyring, KWallet), with no fallback to files or environment variables. |
+| [`picker`](picker) | A full-screen fuzzy finder for the terminal, as fzf: type to filter, arrow keys to move, Enter or action keys to choose, on the alternate screen; and a scrollable full-screen view of text. Everything shown is sanitized. |
 | [`sanitize`](sanitize) | Removes terminal control sequences, bidirectional overrides and invisible characters from remote text before it is printed or returned to a model. |
 
 ## Status
