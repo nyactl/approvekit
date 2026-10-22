@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## Unreleased
 
+## [0.3.1] - 2026-10-22
+
 ### Fixed
 
 - `keychain`: on macOS, replacing or removing a token saved by another build of the tool no longer fails with "An invalid attempt to change the owner of an item. (-25244)". The item is removed with Apple's `security` tool instead, and the new one belongs to the current build. If that fails too, the error names the item to delete in Keychain Access.
@@ -28,6 +30,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Packages `approval`, `people`, `atlassian`, `profile`, `keychain` and `sanitize`, extracted from tix-for-jira and generalised for Confluence.
 - `atlassian` routes scoped tokens through the API gateway for Jira and Confluence, reads the error formats of both, and names a missing scope through `WithScopeHint`.
 
+[0.3.1]: https://github.com/nyactl/approvekit/releases/tag/v0.3.1
 [0.3.0]: https://github.com/nyactl/approvekit/releases/tag/v0.3.0
 [0.2.0]: https://github.com/nyactl/approvekit/releases/tag/v0.2.0
 [0.1.0]: https://github.com/nyactl/approvekit/releases/tag/v0.1.0
