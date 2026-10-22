@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## Unreleased
 
+### Fixed
+
+- `keychain`: on macOS, replacing or removing a token saved by another build of the tool no longer fails with "An invalid attempt to change the owner of an item. (-25244)". The item is removed with Apple's `security` tool instead, and the new one belongs to the current build. If that fails too, the error names the item to delete in Keychain Access.
+
 ## [0.3.0] - 2026-10-16
 
 ### Added

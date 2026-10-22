@@ -3,6 +3,8 @@ package keychain
 import (
 	"errors"
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/keybase/go-keychain"
 )
@@ -45,7 +47,7 @@ func (k Keychain) Set(account, token string) error {
 	item.SetSecClass(keychain.SecClassGenericPassword)
 	item.SetService(k.service)
 	item.SetAccount(account)
-	item.SetLabel(k.service + " API token (" + account + ")")
+	item.SetLabel(k.label(account))
 	item.SetData([]byte(token))
 	item.SetSynchronizable(keychain.SynchronizableNo)
 	if err := keychain.AddItem(item); err != nil {
@@ -56,8 +58,30 @@ func (k Keychain) Set(account, token string) error {
 
 func (k Keychain) Delete(account string) error {
 	err := keychain.DeleteGenericPasswordItem(k.service, account)
+	if errors.Is(err, keychain.ErrorInvalidOwnerEdit) {
+		// Another build of the tool saved the item, and only that build may
+		// delete it through the API: each unsigned build is a different
+		// program to the Keychain. Apple's security tool may delete it.
+		err = securityDelete(k.service, account)
+		if err != nil {
+			return fmt.Errorf("removing token from Keychain: the item %q was saved by another build; delete it in Keychain Access (search for %q) and try again: %w", k.label(account), k.service, err)
+		}
+	}
 	if err != nil && !errors.Is(err, keychain.ErrorItemNotFound) {
 		return fmt.Errorf("removing token from Keychain: %w", err)
+	}
+	return nil
+}
+
+func (k Keychain) label(account string) string { return k.service + " API token (" + account + ")" }
+
+func securityDelete(service, account string) error {
+	out, err := exec.Command("/usr/bin/security", "delete-generic-password", "-s", service, "-a", account).CombinedOutput()
+	if err != nil {
+		if msg := strings.TrimSpace(string(out)); msg != "" {
+			return fmt.Errorf("%w: %s", err, msg)
+		}
+		return err
 	}
 	return nil
 }
